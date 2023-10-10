@@ -90,8 +90,8 @@ async def update_counter(data: SensorData):
         print(f"Resultado de la consulta de diagnóstico: {cursor.fetchone()}")
 
         cursor.execute(
-            "INSERT INTO Eventos (timestamp, id_refugio, people_in, people_out) VALUES (%s, %s, %s, %s)",
-            (timestamp_str, data.id_refugio, people_in, people_out)  
+            "INSERT INTO eventos (timestamp, id_refugio, people_in, people_out, current_count) VALUES (%s, %s, %s, %s, %s)",
+            (timestamp_str, data.id_refugio, people_in, people_out, counter)  
         )
         conn.commit()
 
@@ -99,3 +99,33 @@ async def update_counter(data: SensorData):
         print(f"Error al insertar en la base de datos: {e}")
 
     print(f"Contador actual: {counter}, Gente entrando: {people_in}, Gente saliendo: {people_out}")
+
+#Este endpoint devolverá el contador actual para un refugio específico, calculado a partir de los datos en la tabla eventos.
+@app.get("/refugio/{id_refugio}/current_count/")
+async def get_current_count(id_refugio: str):
+    cursor.execute("SELECT SUM(people_in) - SUM(people_out) FROM eventos WHERE id_refugio = %s", (id_refugio,))
+    result = cursor.fetchone()
+    if result is None:
+        raise HTTPException(status_code=404, detail="Refugio no encontrado")
+
+    current_count = result[0] if result[0] is not None else 0
+    return {"current_count": current_count}
+
+#devuelva los datos históricos de un refugio específico. Esto permitirá a los clientes mostrar un gráfico de la cantidad de personas en el refugio a lo largo del tiempo.
+@app.get("/refugio/{id_refugio}/history/")
+async def get_history(id_refugio: str, start_time: str, end_time: str):
+    cursor.execute("""
+        SELECT timestamp, people_in, people_out
+        FROM eventos
+        WHERE id_refugio = %s AND timestamp BETWEEN %s AND %s
+        ORDER BY timestamp ASC
+    """, (id_refugio, start_time, end_time))
+    
+    results = cursor.fetchall()
+    
+    if results is None or len(results) == 0:
+        raise HTTPException(status_code=404, detail="No se encontraron datos")
+    
+    history = [{"timestamp": r[0], "people_in": r[1], "people_out": r[2]} for r in results]
+    
+    return {"history": history}
