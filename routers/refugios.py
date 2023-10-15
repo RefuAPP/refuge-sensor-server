@@ -33,10 +33,10 @@ async def get_daily_count(id_refugio: str, day: date = None):
         if result is None:
             raise HTTPException(status_code=404, detail="Refugio no encontrado")
 
-        daily_count = result[0] if result[0] is not None else 0
+        daily_count = max(result[0], 0) if result[0] is not None else 0
 
         return {"daily_count": daily_count, "day": str(day)}
-
+ 
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
