@@ -88,7 +88,7 @@ async def get_weekly_count(id_refugio: str, start_date: date = None, end_date: d
                 422: {"description": "Validation Error", "model": ValidationErrorResponse},
                 500: {"description": "Internal Server Error", "model": InternalServerErrorResponse}
             },
-            summary="Obtiene el conteo de personas para un refugio específico en un intervalo de fechas",
+            summary="Obtiene el número de entradas y salidas de personas para un refugio específico en un intervalo de fechas",
             description="Si no se proporcionan fechas de inicio y fin, se usa la semana actual",
             response_description="Retorna el número de personas que han entrado y salido")
 async def get_interval_count(id_refugio: str, start_date: date = None, end_date: date = None):
