@@ -77,6 +77,6 @@ async def update_counter(data: SensorData):
         logging.info("Consulta SQL ejecutada con éxito")
 
     except Exception as e:
-        logging.error(f"Excepción no manejada: {e}")  # Log de excepción
+        logging.exception(f"Excepción no manejada: {e}")  # Log de excepción
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
