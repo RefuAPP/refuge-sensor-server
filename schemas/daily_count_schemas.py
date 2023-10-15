@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 
 class DailyCountResponse(BaseModel):
     daily_count: int = Field(
-        description='Daily count can be a negative or positive integer',
+        ge=0, description='Daily count must be a non-negative integer',
         example=42  
     )
     day: str = Field(
@@ -13,7 +13,7 @@ class DailyCountResponse(BaseModel):
 
 class WeeklyCountResponse(BaseModel):
     weekly_count: int = Field(
-        description='Weekly count can be a negative or positive integer',
+        ge=0, description='Weekly count must be a non-negative integer',
         example=300  
     )
     start_date: str = Field(

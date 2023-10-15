@@ -53,7 +53,8 @@ async def update_counter(data: SensorData):
                     counter += 1
                     people_in = 1
                 elif data.sensor_id == 2:
-                    counter -= 1
+                    # Aquí es donde aseguramos que el contador no sea negativo
+                    counter = max(0, counter - 1)
                     people_out = 1
             else:
                 raise HTTPException(status_code=422, detail="Estado del sensor desconocido")
