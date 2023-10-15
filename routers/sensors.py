@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime, timedelta
 import hashlib
-import logging  # Añadir esto para el logging
+import logging  # Añadido para el logging
 from schemas.response_models import SensorData, SensorDataErrorResponse, UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, ValidationErrorResponse, SuccessResponse
 from .db_config import cursor, conn  
 
