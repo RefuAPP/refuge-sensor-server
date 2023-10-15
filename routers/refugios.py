@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from datetime import date, timedelta
 from .db_config import cursor, conn  
-from schemas.daily_count_schemas import DailyCountResponse, UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, ValidationErrorResponse, InternalServerErrorResponse
+from schemas.daily_count_schemas import DailyCountResponse,WeeklyCountResponse, UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, ValidationErrorResponse, InternalServerErrorResponse
 
 router = APIRouter()
 
@@ -43,7 +43,7 @@ async def get_daily_count(id_refugio: str, day: date = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/refugio/{id_refugio}/weekly_count/",
-            response_model=DailyCountResponse, 
+            response_model=WeeklyCountResponse,
             responses={
                 200: {"description": "Operación exitosa"},
                 401: {"description": "Error: Unauthorized", "model": UnauthorizedResponse},
