@@ -54,16 +54,18 @@ async def update_counter(data: SensorData):
         people_in = 0
         people_out = 0
 
-        if current_time > ignore_until.get(data.sensor_id, datetime.min) and current_time > (last_counter_update + timedelta(seconds=5)):
-            if data.status == "Obstacle":
-                if data.sensor_id == 1:
-                    counter += 1
-                    people_in = 1
-                elif data.sensor_id == 2:
-                    counter = max(0, counter - 1)
-                    people_out = 1
-            else:
-                raise HTTPException(status_code=422, detail="Estado del sensor desconocido")
+        if data.status == "Obstacle":
+            if data.sensor_id == 1:
+                counter += 1
+                people_in = 1
+            elif data.sensor_id == 2:
+                counter = max(0, counter - 1)
+                people_out = 1
+        elif data.status == "No obstacle":
+            pass
+        else:
+            raise HTTPException(status_code=422, detail="Estado del sensor desconocido")
+
 
         last_counter_update = current_time
         ignore_until[data.sensor_id] = current_time + timedelta(seconds=5)
