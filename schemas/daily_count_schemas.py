@@ -25,6 +25,11 @@ class WeeklyCountResponse(BaseModel):
         example='2023-10-07'
     )
 
+class IntervalCountResponse(BaseModel):
+    people_in: int = Field(ge=0, description='Total people entered', example=5)
+    people_out: int = Field(ge=0, description='Total people exited', example=3)
+    start_date: str = Field(min_length=10, max_length=10, description='Start date in YYYY-MM-DD format', example='2023-10-01')
+    end_date: str = Field(min_length=10, max_length=10, description='End date in YYYY-MM-DD format', example='2023-10-07')
 class UnauthorizedResponse(BaseModel):
     detail: str = Field(..., example="Acceso no autorizado", description="Acceso no autorizado debido a autenticación fallida.")
 
