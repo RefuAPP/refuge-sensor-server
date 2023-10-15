@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime, timedelta
 import hashlib
+import logging  # Añadir esto para el logging
 from schemas.response_models import SensorData, SensorDataErrorResponse, UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, ValidationErrorResponse, SuccessResponse
 from .db_config import cursor, conn  
+
+# Configuración de logging
+logging.basicConfig(level=logging.INFO)
 
 router = APIRouter()
 
@@ -25,7 +29,10 @@ last_counter_update = datetime.min
              response_description="Retorna un objeto que confirma que los datos del sensor se han procesado.")
 async def update_counter(data: SensorData):
     try:
+        logging.info(f"Recibido: {data}")  # Log de datos recibidos
+
         received_hash = hashlib.sha256(data.password.encode()).hexdigest()
+        logging.info("Ejecutando consulta SQL para buscar hash de contraseña")
         cursor.execute("SELECT password_hash FROM refugios WHERE id_refugio = %s", (data.id_refugio,))
         result = cursor.fetchone()
         
@@ -53,7 +60,6 @@ async def update_counter(data: SensorData):
                     counter += 1
                     people_in = 1
                 elif data.sensor_id == 2:
-                    # Aquí es donde aseguramos que el contador no sea negativo
                     counter = max(0, counter - 1)
                     people_out = 1
             else:
@@ -62,12 +68,15 @@ async def update_counter(data: SensorData):
         last_counter_update = current_time
         ignore_until[data.sensor_id] = current_time + timedelta(seconds=5)
 
+        logging.info("Ejecutando consulta SQL para actualizar contador")
         cursor.execute(
             "INSERT INTO eventos (timestamp, id_refugio, people_in, people_out, current_count) VALUES (%s, %s, %s, %s, %s)",
             (timestamp_str, data.id_refugio, people_in, people_out, counter)
         )
         conn.commit()
+        logging.info("Consulta SQL ejecutada con éxito")
 
     except Exception as e:
+        logging.error(f"Excepción no manejada: {e}")  # Log de excepción
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
