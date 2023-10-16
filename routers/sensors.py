@@ -37,7 +37,7 @@ async def update_counter(data: SensorData):
     global last_activation_time
     
     if counter is None:  # Inicializamos el contador si es necesario
-        await initialize_counter(data.id_refugio)
+        await initialize_counter(data.id_eventos)
 
     try:
         received_hash = hashlib.sha256(data.password.encode()).hexdigest()
@@ -76,7 +76,7 @@ async def update_counter(data: SensorData):
             )
             cursor.execute(
                 "UPDATE refugios SET current_count = %s WHERE id_refugio = %s",
-                (counter, data.id_refugio)
+                (counter, data.id.eventos)
             )
             conn.commit()
 
