@@ -36,20 +36,32 @@ async def get_daily_count(id_refugio: str, day: date = None):
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/refugio/{id_refugio}/weekly_count_by_day/",
+            responses={
+                200: {"description": "Operación exitosa"},
+                401: {"description": "Error: Unauthorized"},
+                403: {"description": "Error: Forbidden"},
+                404: {"description": "Error: Not Found"},
+                422: {"description": "Validation Error"},
+                500: {"description": "Internal Server Error"}
+            },
+            summary="Obtiene el conteo semanal de personas para un refugio específico, dividido por días",
+            description="Si no se proporcionan fechas de inicio y fin, se usa la semana actual",
+            response_description="Retorna el conteo semanal y el rango de fechas")
 async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_date: date = None):
     if start_date is None or end_date is None:
         end_date = date.today()
         start_date = end_date - timedelta(days=6)
 
     try:
-      
+        # Obtener current_count de la tabla refugios
         cursor.execute("SELECT current_count FROM refugios WHERE id_refugio = %s", (id_refugio,))
         result = cursor.fetchone()
         if result is None:
             raise HTTPException(status_code=404, detail="Refugio no encontrado")
         refugio_current_count = result[0]
 
-       
+        # Tu lógica existente para obtener datos semanales
         cursor.execute("""
             SELECT DATE(timestamp), current_count
             FROM eventos
@@ -72,4 +84,3 @@ async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_
     except Exception as e:
         conn.rollback()
         return JSONResponse(content={"detail": str(e)}, status_code=500)
-
