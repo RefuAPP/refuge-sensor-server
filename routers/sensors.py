@@ -64,7 +64,12 @@ async def update_counter(data: SensorData):
                 "INSERT INTO eventos (timestamp, id_refugio, people_in, people_out, current_count) VALUES (%s, %s, %s, %s, %s)",
                 (data.timestamp, data.id_refugio, people_in, people_out, counter)
             )
+            cursor.execute(
+                "UPDATE refugios SET current_count = %s WHERE id_refugio = %s",
+                (counter, data.id_refugio)
+            )
             conn.commit()
+            
 
     except Exception as e:
         logging.exception(f"Excepción no manejada: {e}")
