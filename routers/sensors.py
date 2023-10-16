@@ -1,17 +1,23 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime, timedelta
 import hashlib
-import logging  # Añadido para el logging
+import logging
 from schemas.response_models import SensorData, SensorDataErrorResponse, UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, ValidationErrorResponse, SuccessResponse
 from .db_config import cursor, conn  
 
-# Configuración de logging
 logging.basicConfig(level=logging.INFO)
 
 router = APIRouter()
 
-counter = 0
+counter = None  # Inicializamos el contador a None para saber que aún no se ha inicializado
 last_activation_time = datetime.min  # Tiempo de la última activación del sensor
+
+async def initialize_counter(id_refugio: str):
+    global counter
+    cursor.execute("SELECT current_count FROM refugios WHERE id_refugio = %s", (id_refugio,))
+    result = cursor.fetchone()
+    if result:
+        counter = result[0]
 
 @router.post("/sensor/",
              response_model=None, 
@@ -28,8 +34,11 @@ last_activation_time = datetime.min  # Tiempo de la última activación del sens
              response_description="Retorna un objeto que confirma que los datos del sensor se han procesado.")
 async def update_counter(data: SensorData):
     global counter
-    global last_activation_time  # Tiempo de la última activación del sensor
+    global last_activation_time
     
+    if counter is None:  # Inicializamos el contador si es necesario
+        await initialize_counter(data.id_refugio)
+
     try:
         received_hash = hashlib.sha256(data.password.encode()).hexdigest()
         cursor.execute("SELECT password_hash FROM refugios WHERE id_refugio = %s", (data.id_refugio,))
@@ -45,7 +54,7 @@ async def update_counter(data: SensorData):
 
         current_time = datetime.strptime(data.timestamp, '%Y-%m-%d %H:%M:%S')
         
-        if last_activation_time is None or (current_time - last_activation_time).seconds >= 5:
+        if (current_time - last_activation_time).seconds >= 5:
             people_in = 0
             people_out = 0
 
@@ -56,6 +65,7 @@ async def update_counter(data: SensorData):
                 elif data.sensor_id == 2:
                     counter = max(0, counter - 1)
                     people_out = 1
+            
             logging.info(f"Contador actualizado: {counter}")
             
             last_activation_time = current_time
@@ -69,10 +79,8 @@ async def update_counter(data: SensorData):
                 (counter, data.id_refugio)
             )
             conn.commit()
-            
 
     except Exception as e:
         logging.exception(f"Excepción no manejada: {e}")
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-
