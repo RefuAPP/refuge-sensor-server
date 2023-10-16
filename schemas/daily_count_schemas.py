@@ -44,3 +44,23 @@ class ValidationErrorResponse(BaseModel):
 
 class InternalServerErrorResponse(BaseModel):
     detail: str = Field(..., example="Error interno del servidor", description="Ocurrió un error no previsto en el servidor.")
+
+class DayCount(BaseModel):
+    date: str = Field(
+        min_length=10, max_length=10, description='Date must be in YYYY-MM-DD format',
+        example='2023-10-01'
+    )
+    count: int = Field(
+        ge=0, description='Daily count must be a non-negative integer',
+        example=42
+    )
+class WeeklyCountResponse(BaseModel):
+    weekly_data: List[DayCount] = Field(..., description='List of daily counts within the week')
+    start_date: str = Field(
+        min_length=10, max_length=10, description='Start date must be in YYYY-MM-DD format',
+        example='2023-10-01'
+    )
+    end_date: str = Field(
+        min_length=10, max_length=10, description='End date must be in YYYY-MM-DD format',
+        example='2023-10-07'
+    )
