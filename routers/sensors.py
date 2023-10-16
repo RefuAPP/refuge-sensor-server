@@ -11,8 +11,7 @@ logging.basicConfig(level=logging.INFO)
 router = APIRouter()
 
 counter = 0
-ignore_until = {}
-last_counter_update = datetime.min
+last_activation_time = datetime.min  # Tiempo de la última activación del sensor
 
 @router.post("/sensor/",
              response_model=None, 
@@ -28,11 +27,11 @@ last_counter_update = datetime.min
              description="Este endpoint recibe datos del sensor y actualiza el contador de personas en el refugio correspondiente.",
              response_description="Retorna un objeto que confirma que los datos del sensor se han procesado.")
 async def update_counter(data: SensorData):
+    global counter
+    global last_activation_time  # Tiempo de la última activación del sensor
+    
     try:
-        logging.info(f"Recibido: {data}")  # Log de datos recibidos
-
         received_hash = hashlib.sha256(data.password.encode()).hexdigest()
-        logging.info("Ejecutando consulta SQL para buscar hash de contraseña")
         cursor.execute("SELECT password_hash FROM refugios WHERE id_refugio = %s", (data.id_refugio,))
         result = cursor.fetchone()
         
@@ -43,45 +42,31 @@ async def update_counter(data: SensorData):
         
         if received_hash != stored_hash:
             raise HTTPException(status_code=401, detail="Hash inválido")
-        
-        global counter
-        global ignore_until
-        global last_counter_update
 
-        timestamp_str = data.timestamp
-        current_time = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+        current_time = datetime.strptime(data.timestamp, '%Y-%m-%d %H:%M:%S')
         
-        people_in = 0
-        people_out = 0
-        logging.info(f"Contador antes de la actualización: {counter}")
-        logging.info(f"Sensor activado: {data.sensor_id}")
-        if data.status == "Obstacle":
-            if data.sensor_id == 1:
-                counter += 1
-                people_in = 1
-            elif data.sensor_id == 2:
-                
-                counter = max(0, counter - 1)
-                people_out = 1
-        
-        elif data.status == "No obstacle":
-            pass
-        else:
-            raise HTTPException(status_code=422, detail="Estado del sensor desconocido")
+        if last_activation_time is None or (current_time - last_activation_time).seconds >= 5:
+            people_in = 0
+            people_out = 0
 
-        logging.info(f"Contador después de la actualización: {counter}")
-        last_counter_update = current_time
-        ignore_until[data.sensor_id] = current_time + timedelta(seconds=5)
+            if data.status == "Obstacle":
+                if data.sensor_id == 1:
+                    counter += 1
+                    people_in = 1
+                elif data.sensor_id == 2:
+                    counter = max(0, counter - 1)
+                    people_out = 1
 
-        logging.info("Ejecutando consulta SQL para actualizar contador")
-        cursor.execute(
-            "INSERT INTO eventos (timestamp, id_refugio, people_in, people_out, current_count) VALUES (%s, %s, %s, %s, %s)",
-            (timestamp_str, data.id_refugio, people_in, people_out, counter)
-        )
-        conn.commit()
-        logging.info("Consulta SQL ejecutada con éxito")
+            last_activation_time = current_time
+
+            cursor.execute(
+                "INSERT INTO eventos (timestamp, id_refugio, people_in, people_out, current_count) VALUES (%s, %s, %s, %s, %s)",
+                (data.timestamp, data.id_refugio, people_in, people_out, counter)
+            )
+            conn.commit()
 
     except Exception as e:
-        logging.exception(f"Excepción no manejada: {e}")  # Log de excepción
+        logging.exception(f"Excepción no manejada: {e}")
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
