@@ -56,7 +56,8 @@ async def update_counter(data: SensorData):
                 elif data.sensor_id == 2:
                     counter = max(0, counter - 1)
                     people_out = 1
-
+            logging.info(f"Contador actualizado: {counter}")
+            
             last_activation_time = current_time
 
             cursor.execute(
