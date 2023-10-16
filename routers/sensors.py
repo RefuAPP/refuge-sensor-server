@@ -14,7 +14,7 @@ last_activation_time = datetime.min  # Tiempo de la última activación del sens
 
 async def initialize_counter(id_refugio: str):
     global counter
-    cursor.execute("SELECT current_count FROM eventos WHERE id_refugio = %s", (id_refugio,))
+    cursor.execute("SELECT current_count FROM refugios WHERE id_refugio = %s", (id_refugio,))
     result = cursor.fetchone()
     if result:
         counter = result[0]
@@ -79,6 +79,7 @@ async def update_counter(data: SensorData):
                 (counter, data.id_refugio)
             )
             conn.commit()
+
 
     except Exception as e:
         logging.exception(f"Excepción no manejada: {e}")
