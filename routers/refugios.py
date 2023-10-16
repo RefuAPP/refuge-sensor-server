@@ -3,6 +3,8 @@ from datetime import date, timedelta
 from .db_config import cursor, conn  
 from typing import List, Union, Dict
 from schemas.daily_count_schemas import DailyCountResponse, WeeklyCountResponse, DayCount, IntervalCountResponse, UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, ValidationErrorResponse, InternalServerErrorResponse
+from fastapi.responses import JSONResponse
+
 router = APIRouter()
 
 @router.get("/refugio/{id_refugio}/daily_count/",
@@ -43,7 +45,6 @@ async def get_daily_count(id_refugio: str, day: date = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/refugio/{id_refugio}/weekly_count_by_day/",
-            response_model=Union[List[DayCount], Dict[str, str]],  
             responses={
                 200: {"description": "Operación exitosa"},
                 401: {"description": "Error: Unauthorized"},
@@ -72,15 +73,15 @@ async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_
         result = cursor.fetchall()
 
         if result is None or len(result) == 0:
-            return {"message": "No hay eventos"}
+            return JSONResponse(content={"message": "No hay eventos"}, status_code=200)
 
-        weekly_data = [{"date": str(r[0]), "count": r[1]} for r in result]
+        weekly_data = [{"date": str(r[0]), "count": max(0, r[1])} for r in result]
 
-        return weekly_data  
+        return JSONResponse(content=weekly_data, status_code=200)
 
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(content={"detail": str(e)}, status_code=500)
 @router.get("/refugio/{id_refugio}/interval_count/",
             response_model=IntervalCountResponse,
             responses={
