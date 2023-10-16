@@ -1,8 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from datetime import date, timedelta
 from .db_config import cursor, conn  
-from typing import List, Union, Dict
-from schemas.daily_count_schemas import DailyCountResponse, WeeklyCountResponse, DayCount, IntervalCountResponse, UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, ValidationErrorResponse, InternalServerErrorResponse
+from schemas.daily_count_schemas import DailyCountResponse, IntervalCountResponse, UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, ValidationErrorResponse, InternalServerErrorResponse
 from fastapi.responses import JSONResponse
 
 router = APIRouter()
@@ -85,6 +84,7 @@ async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_
     except Exception as e:
         conn.rollback()
         return JSONResponse(content={"detail": str(e)}, status_code=500)
+    
 @router.get("/refugio/{id_refugio}/interval_count/",
             response_model=IntervalCountResponse,
             responses={
