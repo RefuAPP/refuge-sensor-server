@@ -36,24 +36,20 @@ async def get_daily_count(id_refugio: str, day: date = None):
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/refugio/{id_refugio}/weekly_count_by_day/",
-            responses={
-                200: {"description": "Operación exitosa"},
-                401: {"description": "Error: Unauthorized"},
-                403: {"description": "Error: Forbidden"},
-                404: {"description": "Error: Not Found"},
-                422: {"description": "Validation Error"},
-                500: {"description": "Internal Server Error"}
-            },
-            summary="Obtiene el conteo semanal de personas para un refugio específico, dividido por días",
-            description="Si no se proporcionan fechas de inicio y fin, se usa la semana actual",
-            response_description="Retorna el conteo semanal y el rango de fechas")
 async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_date: date = None):
     if start_date is None or end_date is None:
         end_date = date.today()
         start_date = end_date - timedelta(days=6)
 
     try:
+      
+        cursor.execute("SELECT current_count FROM refugios WHERE id_refugio = %s", (id_refugio,))
+        result = cursor.fetchone()
+        if result is None:
+            raise HTTPException(status_code=404, detail="Refugio no encontrado")
+        refugio_current_count = result[0]
+
+       
         cursor.execute("""
             SELECT DATE(timestamp), current_count
             FROM eventos
@@ -66,13 +62,12 @@ async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_
         all_dates = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
 
         db_results = {str(r[0]): r[1] for r in result}
-
         weekly_data = [{"date": str(d), "count": db_results.get(str(d), 0)} for d in all_dates]
 
         if result is None or len(result) == 0:
-            return JSONResponse(content={"message": "No hay eventos"}, status_code=200)
+            return JSONResponse(content={"message": "No hay eventos", "current_count": refugio_current_count}, status_code=200)
 
-        return JSONResponse(content=weekly_data, status_code=200)
+        return JSONResponse(content={"weekly_data": weekly_data, "current_count": refugio_current_count}, status_code=200)
 
     except Exception as e:
         conn.rollback()
