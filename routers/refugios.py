@@ -48,56 +48,36 @@ async def get_daily_count(id_refugio: str, day: date = None):
             summary="Obtiene el conteo semanal de personas para un refugio específico, dividido por días",
             description="Si no se proporcionan fechas de inicio y fin, se usa la semana actual",
             response_description="Retorna el conteo semanal y el rango de fechas")
-@router.get("/refugio/{id_refugio}/weekly_count_by_day/",
-            responses={
-                200: {"description": "Operación exitosa"},
-                401: {"description": "Error: Unauthorized"},
-                403: {"description": "Error: Forbidden"},
-                404: {"description": "Error: Not Found"},
-                422: {"description": "Validation Error"},
-                500: {"description": "Internal Server Error"}
-            },
-            summary="Obtiene el conteo semanal de personas para un refugio específico, dividido por días",
-            description="Si no se proporcionan fechas de inicio y fin, se usa la semana actual",
-            response_description="Retorna el conteo semanal y el rango de fechas")
 async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_date: date = None):
     if start_date is None or end_date is None:
-        end_date = date.today()
+        end_date = date.today() - timedelta(days=1)
         start_date = end_date - timedelta(days=6)
 
     try:
-        # Obtener el current_count de la tabla refugios
+        # Obtener current_count de la tabla refugios
         cursor.execute("SELECT current_count FROM refugios WHERE id_refugio = %s", (id_refugio,))
         result = cursor.fetchone()
         if result is None:
             raise HTTPException(status_code=404, detail="Refugio no encontrado")
         refugio_current_count = result[0]
 
+        # Tu lógica existente para obtener datos semanales
         cursor.execute("""
             SELECT DATE(timestamp), current_count
-            FROM (
-                SELECT DATE(timestamp) as date, current_count
-                FROM eventos
-                WHERE id_refugio = %s AND DATE(timestamp) BETWEEN %s AND %s
-                ORDER BY timestamp DESC
-            ) as subquery
-            GROUP BY DATE(timestamp)
-            ORDER BY DATE(timestamp);
-
+            FROM eventos
+            WHERE id_refugio = %s AND DATE(timestamp) BETWEEN %s AND %s
+            GROUP BY DATE(timestamp), current_count
+            ORDER BY DATE(timestamp)
         """, (id_refugio, start_date, end_date))
 
         result = cursor.fetchall()
         all_dates = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
 
         db_results = {str(r[0]): r[1] for r in result}
-        if str(date.today()) in db_results:
-            db_results[str(date.today())] = refugio_current_count
-        today_str = str(date.today())
-        weekly_data = [
-            {"date": str(d), "count": refugio_current_count if str(d) == str(date.today()) else db_results.get(str(d), 0)}
-            for d in all_dates
-        ]
+        weekly_data = [{"date": str(d), "count": db_results.get(str(d), 0)} for d in all_dates]
 
+        if result is None or len(result) == 0:
+            return JSONResponse(content={"message": "No hay eventos", "current_count": refugio_current_count}, status_code=200)
 
         return JSONResponse(content={"weekly_data": weekly_data, "current_count": refugio_current_count}, status_code=200)
 
