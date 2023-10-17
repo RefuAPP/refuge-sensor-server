@@ -94,9 +94,9 @@ async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_
             db_results[str(date.today())] = refugio_current_count
         today_str = str(date.today())
         weekly_data = [
-            {"date": str(d), "count": refugio_current_count if str(d) == today_str else db_results.get(str(d), 0)}
+            {"date": str(d), "count": refugio_current_count if str(d) == str(date.today()) else db_results.get(str(d), 0)}
             for d in all_dates
-]
+        ]
 
 
         return JSONResponse(content={"weekly_data": weekly_data, "current_count": refugio_current_count}, status_code=200)
