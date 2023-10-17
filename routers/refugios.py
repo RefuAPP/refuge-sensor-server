@@ -74,10 +74,10 @@ async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_
         refugio_current_count = result[0]
 
         cursor.execute("""
-            SELECT DATE(timestamp), current_count
+            SELECT DATE(timestamp), MAX(current_count)
             FROM eventos
             WHERE id_refugio = %s AND DATE(timestamp) BETWEEN %s AND %s
-            GROUP BY DATE(timestamp), current_count
+            GROUP BY DATE(timestamp)
             ORDER BY DATE(timestamp)
         """, (id_refugio, start_date, end_date))
 
