@@ -90,7 +90,8 @@ async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_
         all_dates = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
 
         db_results = {str(r[0]): r[1] for r in result}
-        
+        if str(date.today()) in db_results:
+            db_results[str(date.today())] = refugio_current_count
         today_str = str(date.today())
         weekly_data = [
             {"date": str(d), "count": refugio_current_count if str(d) == today_str else db_results.get(str(d), 0)}
