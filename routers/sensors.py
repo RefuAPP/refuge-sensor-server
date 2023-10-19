@@ -2,8 +2,9 @@ from fastapi import APIRouter, HTTPException
 from datetime import datetime, timedelta
 import hashlib
 import logging
-from schemas.response_models import SensorData, SensorDataErrorResponse, UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, ValidationErrorResponse, SuccessResponse
-from .db_config import cursor, conn  
+from schemas.response_models import SensorData, SensorDataErrorResponse, UnauthorizedResponse, ForbiddenResponse, \
+    NotFoundResponse, ValidationErrorResponse, SuccessResponse
+from .db_config import cursor, conn
 
 logging.basicConfig(level=logging.INFO)
 
@@ -12,6 +13,7 @@ router = APIRouter()
 counter = None  # Inicializamos el contador a None para saber que aún no se ha inicializado
 last_activation_time = datetime.min  # Tiempo de la última activación del sensor
 
+
 async def initialize_counter(id_refugio: str):
     global counter
     cursor.execute("SELECT current_count FROM refugios WHERE id_refugio = %s", (id_refugio,))
@@ -19,8 +21,9 @@ async def initialize_counter(id_refugio: str):
     if result:
         counter = result[0]
 
+
 @router.post("/sensor/",
-             response_model=None, 
+             response_model=None,
              responses={
                  200: {"description": "Operación exitosa", "model": SuccessResponse},
                  401: {"description": "Error: Unauthorized", "model": UnauthorizedResponse},
@@ -35,7 +38,7 @@ async def initialize_counter(id_refugio: str):
 async def update_counter(data: SensorData):
     global counter
     global last_activation_time
-    
+
     if counter is None:  # Inicializamos el contador si es necesario
         await initialize_counter(data.id_refugio)
 
@@ -43,17 +46,17 @@ async def update_counter(data: SensorData):
         received_hash = hashlib.sha256(data.password.encode()).hexdigest()
         cursor.execute("SELECT password_hash FROM refugios WHERE id_refugio = %s", (data.id_refugio,))
         result = cursor.fetchone()
-        
+
         if result is None:
             raise HTTPException(status_code=404, detail="Refugio no encontrado")
-            
+
         stored_hash = result[0]
-        
+
         if received_hash != stored_hash:
             raise HTTPException(status_code=401, detail="Hash inválido")
 
         current_time = datetime.strptime(data.timestamp, '%Y-%m-%d %H:%M:%S')
-        
+
         if (current_time - last_activation_time).seconds >= 5:
             people_in = 0
             people_out = 0
@@ -65,9 +68,9 @@ async def update_counter(data: SensorData):
                 elif data.sensor_id == 2:
                     counter = max(0, counter - 1)
                     people_out = 1
-            
+
             logging.info(f"Contador actualizado: {counter}")
-            
+
             last_activation_time = current_time
 
             cursor.execute(

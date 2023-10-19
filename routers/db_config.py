@@ -8,7 +8,6 @@ DB_PASS = Configuration.get("DB_PASS")
 DB_HOST = Configuration.get("DB_HOST")
 DB_PORT = Configuration.get("DB_PORT")
 
-# Conectar a la base de datos PostgreSQL
 conn = psycopg2.connect(
     dbname=DB_NAME,
     user=DB_USER,

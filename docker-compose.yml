@@ -9,8 +9,6 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
     ports:
         - '5432:5432'
-    volumes:
-      - postgres_sensor_data:/var/lib/postgresql/data
 
   refuapp-sensor-backend:
     build:
@@ -28,11 +26,3 @@ services:
       - sensors_db
     ports:
       - '8001:8000'
-
-volumes:
-  postgres_sensor_data:
-    driver: local
-    driver_opts:
-      type: none
-      device: /home/pablo/data
-      o: bind
