@@ -1,4 +1,5 @@
 import configparser
+import hashlib
 import logging
 import os
 from typing import Dict, NoReturn
@@ -24,9 +25,9 @@ class Configuration:
         Configuration.CONFIG.read(Configuration.CONFIGURATION_FILE)
 
     @staticmethod
-    def get(option: str) -> str | None:
+    def get(option: str, section: str = 'DATABASE') -> str | None:
         Configuration.set_up()
-        return Configuration.CONFIG.get(section='DATABASE', option=option, vars=os.environ)
+        return Configuration.CONFIG.get(section=section, option=option, vars=os.environ)
 
 
 def get_config_for_db() -> Dict[str, str] | None:
@@ -83,8 +84,6 @@ def create_tables(conn):
     logging.debug("Writting changes to the database... ✍")
     conn.commit()
     cursor.close()
-    conn.close()
-
     logging.info("Database configuration done! 🚀")
 
 
@@ -112,11 +111,24 @@ def load_environment_vars_if_debug_mode():
         load_dotenv()
 
 
+def populate_db(db):
+    cursor = db.cursor()
+    logging.debug("Adding refuges....🏠")
+    refuge_id = Configuration.get(option='REFUGE_ID', section='POPULATE_DB')
+    password = Configuration.get(option='REFUGE_PASSWORD', section='POPULATE_DB')
+    password_hashed = hashlib.sha256(password.encode()).hexdigest()
+    cursor.execute("INSERT INTO refugios (id_refugio, password_hash) VALUES (%s, %s)", (refuge_id, password_hashed))
+    db.commit()
+    cursor.close()
+
+
 def main():
     load_environment_vars_if_debug_mode()
     config = get_db_config()
     db = get_db(config=config)
     create_tables(db)
+    populate_db(db)
+    db.close()
 
 
 if __name__ == '__main__':

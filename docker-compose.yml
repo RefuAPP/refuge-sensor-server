@@ -22,7 +22,9 @@ services:
       DB_PASS: ${DB_PASS}
       DB_HOST: docker-mysql
       DB_PORT: 5432
+      REFUGE_ID: ${REFUGE_ID}
+      REFUGE_PASSWORD: ${REFUGE_PASSWORD}
     depends_on:
       - sensors_db
     ports:
-      - '8001:8000'
+      - '8000:8000'
