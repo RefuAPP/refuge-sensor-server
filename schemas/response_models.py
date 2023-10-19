@@ -4,11 +4,11 @@ from pydantic import BaseModel, Field
 
 
 class SensorData(BaseModel):
-    timestamp: str = Field(..., example="2023-12-31 23:59:59", description="El timestamp del evento.")
-    status: str = Field(..., example="Obstacle", description="El estado del sensor.")
-    sensor_id: int = Field(..., example=1, description="El ID del sensor.")
-    id_refugio: str = Field(..., example="REF123", description="El ID del refugio.")
-    password: str = Field(..., example="supersecure", description="La contraseña para autenticación.")
+    timestamp: str = Field(example="2023-12-31 23:59:59", description="El timestamp del evento.")
+    status: str = Field(example="Obstacle", description="El estado del sensor.")
+    sensor_id: int = Field(example=1, description="El ID del sensor.")
+    id_refugio: str = Field(example="d4504a10-9fe9-4006-aae6-2a399cd5a286", description="El ID del refugio.")
+    password: str = Field(example="ChangeMe123", description="La contraseña para autenticación.")
 
 
 # Respuestas de Error
