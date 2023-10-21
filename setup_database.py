@@ -62,7 +62,8 @@ def create_tables(conn):
     create_refugios_table_query = """
     CREATE TABLE IF NOT EXISTS refugios (
         id_refugio VARCHAR(255) PRIMARY KEY,
-        password_hash VARCHAR(255) NOT NULL
+        password_hash VARCHAR(255) NOT NULL,
+        current_count INT DEFAULT 0
     );
     """
     cursor.execute(create_refugios_table_query)
@@ -76,6 +77,7 @@ def create_tables(conn):
         people_in INT,
         people_out INT,
         eventos INT,
+        current_count INT,
         FOREIGN KEY (id_refugio) REFERENCES refugios(id_refugio)
     );
     """
