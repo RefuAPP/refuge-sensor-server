@@ -10,8 +10,8 @@ logging.basicConfig(level=logging.INFO)
 
 router = APIRouter()
 
-counter = None  # Inicializamos el contador a None para saber que aún no se ha inicializado
-last_activation_time = datetime.min  # Tiempo de la última activación del sensor
+counter = None  
+last_activation_time = datetime.min  
 
 
 async def initialize_counter(id_refugio: str):
@@ -39,7 +39,7 @@ async def update_counter(data: SensorData):
     global counter
     global last_activation_time
 
-    if counter is None:  # Inicializamos el contador si es necesario
+    if counter is None:  
         await initialize_counter(data.id_refugio)
 
     try:
@@ -60,7 +60,7 @@ async def update_counter(data: SensorData):
         if (current_time - last_activation_time).seconds >= 5:
             people_in = 0
             people_out = 0
-
+            logging.info(f"Intentando insertar: {data.timestamp}, {data.id_refugio}, {people_in}, {people_out}, {counter}")  
             if data.status == "Obstacle":
                 if data.sensor_id == 1:
                     counter += 1
@@ -77,13 +77,14 @@ async def update_counter(data: SensorData):
                 "INSERT INTO eventos (timestamp, id_refugio, people_in, people_out, current_count) VALUES (%s, %s, %s, %s, %s)",
                 (data.timestamp, data.id_refugio, people_in, people_out, counter)
             )
+            logging.info(f"Evento insertado: timestamp={data.timestamp}, id_refugio={data.id_refugio}, people_in={people_in}, people_out={people_out}, counter={counter}")
+
             cursor.execute(
                 "UPDATE refugios SET current_count = %s WHERE id_refugio = %s",
                 (counter, data.id_refugio)
             )
             conn.commit()
-
-
+            logging.info("Commit realizado.")
     except Exception as e:
         logging.exception(f"Excepción no manejada: {e}")
         conn.rollback()

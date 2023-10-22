@@ -54,30 +54,24 @@ async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_
         start_date = end_date - timedelta(days=6)
 
     try:
-        # Obtener current_count de la tabla refugios
         cursor.execute("SELECT current_count FROM refugios WHERE id_refugio = %s", (id_refugio,))
         result = cursor.fetchone()
         if result is None:
             raise HTTPException(status_code=404, detail="Refugio no encontrado")
         refugio_current_count = result[0]
 
-        # Tu lógica existente para obtener datos semanales
         cursor.execute("""
-            SELECT DATE(timestamp), current_count
+            SELECT DATE(timestamp), COUNT(*)
             FROM eventos
             WHERE id_refugio = %s AND DATE(timestamp) BETWEEN %s AND %s
-            GROUP BY DATE(timestamp), current_count
+            GROUP BY DATE(timestamp)
             ORDER BY DATE(timestamp)
         """, (id_refugio, start_date, end_date))
 
         result = cursor.fetchall()
-        all_dates = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]
-
+        all_dates = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
         db_results = {str(r[0]): r[1] for r in result}
-        weekly_data = [{"date": str(d), "count": db_results.get(str(d), 0)} for d in all_dates]
-
-        if result is None or len(result) == 0:
-            return JSONResponse(content={"message": "No hay eventos", "current_count": refugio_current_count}, status_code=200)
+        weekly_data = [{"date": str(d), "count": db_results.get(str(d), "NO HAY DATOS")} for d in all_dates]
 
         return JSONResponse(content={"weekly_data": weekly_data, "current_count": refugio_current_count}, status_code=200)
 
