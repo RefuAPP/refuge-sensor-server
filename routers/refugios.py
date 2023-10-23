@@ -71,7 +71,7 @@ async def get_weekly_count_by_day(id_refugio: str, start_date: date = None, end_
         result = cursor.fetchall()
         all_dates = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
         db_results = {str(r[0]): r[1] for r in result}
-        weekly_data = [{"date": str(d), "count": db_results.get(str(d), "NO HAY DATOS")} for d in all_dates]
+        weekly_data = [{"date": str(d), "count": db_results.get(d, 0)} for d in all_dates]
 
         return JSONResponse(content={"weekly_data": weekly_data, "current_count": refugio_current_count}, status_code=200)
 
