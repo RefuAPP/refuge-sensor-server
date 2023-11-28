@@ -45,12 +45,8 @@ class InternalServerErrorResponse(BaseModel):
                         description="Ocurrió un error no previsto en el servidor.")
 
 
-class DailyCountResponse(BaseModel):
-    daily_count: int = Field(
-        ge=0, description='Daily count must be a non-negative integer',
-        example=42
-    )
-    day: str = Field(
-        min_length=10, max_length=10, description='Day must be in YYYY-MM-DD format',
-        example='2023-10-10'
-    )
+class SuccessResponse(BaseModel):
+    message: str = Field(..., example="Datos del sensor procesados correctamente.", description="Mensaje de éxito.")
+
+class LastActivityResponse(BaseModel):
+    last_activity: str = Field(..., example="2023-12-31 23:59:59", description="Última hora de actividad registrada.")

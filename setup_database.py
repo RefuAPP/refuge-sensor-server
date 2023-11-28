@@ -58,26 +58,21 @@ def create_db(config: Dict[str, str]):
 
 def create_tables(conn):
     cursor = conn.cursor()
-    logging.debug("Creating refuge table.... 🕝")
+    logging.debug("Creating refugios table.... 🕝")
     create_refugios_table_query = """
     CREATE TABLE IF NOT EXISTS refugios (
         id_refugio VARCHAR(255) PRIMARY KEY,
         password_hash VARCHAR(255) NOT NULL,
-        current_count INT DEFAULT 0
+        last_activity TIMESTAMP
     );
     """
     cursor.execute(create_refugios_table_query)
-
     logging.debug("Creating events table.... 🕝")
     create_eventos_table_query = """
     CREATE TABLE IF NOT EXISTS eventos (
         id SERIAL PRIMARY KEY,
         timestamp TIMESTAMP NOT NULL,
         id_refugio VARCHAR(255) NOT NULL,
-        people_in INT,
-        people_out INT,
-        eventos INT,
-        current_count INT,
         FOREIGN KEY (id_refugio) REFERENCES refugios(id_refugio)
     );
     """
