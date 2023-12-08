@@ -2,12 +2,11 @@ import configparser
 import hashlib
 import logging
 import os
-from typing import Dict, NoReturn
+from typing import Dict, Union, NoReturn
 import argparse
 
 import psycopg2
 from dotenv import load_dotenv
-
 
 class Configuration:
     CONFIG: configparser.ConfigParser = None
@@ -25,12 +24,11 @@ class Configuration:
         Configuration.CONFIG.read(Configuration.CONFIGURATION_FILE)
 
     @staticmethod
-    def get(option: str, section: str = 'DATABASE') -> str | None:
+    def get(option: str, section: str = 'DATABASE') -> Union[str, None]:
         Configuration.set_up()
         return Configuration.CONFIG.get(section=section, option=option, vars=os.environ)
 
-
-def get_config_for_db() -> Dict[str, str] | None:
+def get_config_for_db() -> Union[Dict[str, str], None]:
     dbname = Configuration.get('DB_NAME')
     user = Configuration.get('DB_USER')
     password = Configuration.get('DB_PASS')
@@ -46,7 +44,6 @@ def get_config_for_db() -> Dict[str, str] | None:
         }
     return None
 
-
 def create_db(config: Dict[str, str]):
     logging.debug("Connecting to the postgresql db 🐘")
     try:
@@ -55,29 +52,23 @@ def create_db(config: Dict[str, str]):
         logging.error(f"Error al conectar a la base de datos: {e}")
         return None
 
-
 def create_tables(conn):
     cursor = conn.cursor()
-    logging.debug("Creating refuge table.... 🕝")
+    logging.debug("Creating refugios table.... 🕝")
     create_refugios_table_query = """
     CREATE TABLE IF NOT EXISTS refugios (
         id_refugio VARCHAR(255) PRIMARY KEY,
         password_hash VARCHAR(255) NOT NULL,
-        current_count INT DEFAULT 0
+        last_activity TIMESTAMP
     );
     """
     cursor.execute(create_refugios_table_query)
-
     logging.debug("Creating events table.... 🕝")
     create_eventos_table_query = """
     CREATE TABLE IF NOT EXISTS eventos (
         id SERIAL PRIMARY KEY,
         timestamp TIMESTAMP NOT NULL,
         id_refugio VARCHAR(255) NOT NULL,
-        people_in INT,
-        people_out INT,
-        eventos INT,
-        current_count INT,
         FOREIGN KEY (id_refugio) REFERENCES refugios(id_refugio)
     );
     """
@@ -88,22 +79,19 @@ def create_tables(conn):
     cursor.close()
     logging.info("Database configuration done! 🚀")
 
-
-def get_db_config() -> Dict[str, str] | NoReturn:
-    config: Dict[str, str] | None = get_config_for_db()
+def get_db_config() -> Union[Dict[str, str], NoReturn]:
+    config: Union[Dict[str, str], None] = get_config_for_db()
     if config is None:
         logging.info("Database configuration failing 🔴, exiting.. ")
         exit(-1)
     return config
 
-
-def get_db(config: Dict[str, str]) -> any | NoReturn:
+def get_db(config: Dict[str, str]) -> Union[any, NoReturn]:
     db = create_db(config=config)
     if db is None:
         logging.info("Database connection failing 🔴, exiting.. ")
         exit(-1)
     return db
-
 
 def load_environment_vars_if_debug_mode():
     parser = argparse.ArgumentParser(description='Database configuration')
@@ -112,17 +100,22 @@ def load_environment_vars_if_debug_mode():
     if args.debug:
         load_dotenv()
 
-
 def populate_db(db):
     cursor = db.cursor()
     logging.debug("Adding refuges....🏠")
     refuge_id = Configuration.get(option='REFUGE_ID', section='POPULATE_DB')
     password = Configuration.get(option='REFUGE_PASSWORD', section='POPULATE_DB')
     password_hashed = hashlib.sha256(password.encode()).hexdigest()
-    cursor.execute("INSERT INTO refugios (id_refugio, password_hash) VALUES (%s, %s)", (refuge_id, password_hashed))
-    db.commit()
-    cursor.close()
 
+    # Comprueba si el id_refugio ya existe
+    cursor.execute("SELECT id_refugio FROM refugios WHERE id_refugio = %s", (refuge_id,))
+    if cursor.fetchone():
+        print(f"Refugio con id {refuge_id} ya existe, no se insertará.")
+    else:
+        cursor.execute("INSERT INTO refugios (id_refugio, password_hash) VALUES (%s, %s)", (refuge_id, password_hashed))
+        db.commit()
+
+    cursor.close()
 
 def main():
     load_environment_vars_if_debug_mode()
@@ -131,7 +124,6 @@ def main():
     create_tables(db)
     populate_db(db)
     db.close()
-
 
 if __name__ == '__main__':
     main()

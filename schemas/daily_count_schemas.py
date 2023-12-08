@@ -2,6 +2,11 @@ from typing import List, Dict, Any
 
 from pydantic import BaseModel, Field
 
+def ge0(value: int) -> int:
+    if value < 0:
+        raise ValueError("El valor debe ser mayor o igual a cero")
+    return value
+
 
 class DailyCountResponse(BaseModel):
     daily_count: int = Field(
@@ -31,7 +36,7 @@ class WeeklyCountResponse(BaseModel):
 
 class IntervalCountResponse(BaseModel):
     people_in: int = Field(ge=0, description='Total people entered', example=5)
-    people_out: int = Field(ge=0, description='Total people exited', example=3)
+    people_out: int = Field(ge0, description='Total people exited', example=3)
     start_date: str = Field(min_length=10, max_length=10, description='Start date in YYYY-MM-DD format',
                             example='2023-10-01')
     end_date: str = Field(min_length=10, max_length=10, description='End date in YYYY-MM-DD format',
@@ -83,3 +88,4 @@ class WeeklyCountResponse(BaseModel):
         min_length=10, max_length=10, description='End date must be in YYYY-MM-DD format',
         example='2023-10-07'
     )
+
