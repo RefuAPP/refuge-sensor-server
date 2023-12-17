@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
-from .db_config import cursor, conn
+from .db_config import conn
 from schemas.daily_count_schemas import UnauthorizedResponse, ForbiddenResponse, NotFoundResponse, InternalServerErrorResponse
 from fastapi.responses import JSONResponse
 
@@ -19,17 +19,17 @@ router = APIRouter()
             response_description="Retorna la última actividad")
 async def get_last_activity(id_refugio: str):
     try:
-        cursor.execute("SELECT last_activity FROM refugios WHERE id_refugio = %s", (id_refugio,))
-        result = cursor.fetchone()
-        if result is None:
-            raise HTTPException(status_code=404, detail="Refugio no encontrado")
-        last_activity = result[0]
-
-        if last_activity is not None:
-            last_activity = last_activity.isoformat()  
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT last_activity FROM refugios WHERE id_refugio = %s", (id_refugio,))
+            result = cursor.fetchone()
+            if result is None:
+                raise HTTPException(status_code=404, detail="Refugio no encontrado")
+            last_activity = result[0]
+            if last_activity is not None:
+                last_activity = last_activity.isoformat()
 
         return JSONResponse(content={"last_activity": last_activity}, status_code=200)
- 
+
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -47,15 +47,12 @@ async def get_last_activity(id_refugio: str):
             response_description="Retorna un objeto que confirma que los datos del sensor se han procesado.")
 async def update_last_activity(id_refugio: str):
     try:
-        current_time = datetime.now()
-        cursor.execute(
-            "UPDATE refugios SET last_activity = %s WHERE id_refugio = %s",
-            (current_time, id_refugio)
-        )
-        conn.commit()
-        return JSONResponse(content={"message": "Última actividad actualizada"}, status_code=200)
+        with conn.cursor() as cursor:
+            current_time = datetime.now()
+            cursor.execute("UPDATE refugios SET last_activity = %s WHERE id_refugio = %s", (current_time, id_refugio))
+            conn.commit()
+            return JSONResponse(content={"message": "Última actividad actualizada"}, status_code=200)
+
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-    
-    
